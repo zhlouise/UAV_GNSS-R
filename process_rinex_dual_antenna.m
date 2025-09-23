@@ -7,9 +7,6 @@ clc;
 clear;
 close all;
 
-D2R = pi/180;
-R2D = 180/pi;
-
 %% Prompt user for input data files
 
 % Zenith/upper antenna data
@@ -32,7 +29,7 @@ obs_nadir = obs_nadir.selectSat(obs_nadir.sys==gt.C.SYS_GPS | obs_nadir.sys==gt.
 
 %% Pre-processing
 % Rough Hong Kong coordinates for initial guess & correction modelling
-pos_ini = gt.Gpos(rtklib.llh2xyz([22.3193,114.1694,0].*[D2R,D2R,1]),"xyz"); 
+pos_ini = gt.Gpos(rtklib.llh2xyz([22.3193,114.1694,0]),"xyz"); 
 
 sat_zenith = gt.Gsat(obs_zenith, nav);
 sat_zenith.setRcvPos(pos_ini);
@@ -41,7 +38,7 @@ sat_nadir = gt.Gsat(obs_nadir, nav);
 sat_nadir.setRcvPos(pos_ini);
 
 %% Observation processing - zenith antenna
-zenith_data = cell(obs_zenith.n, 10);
+zenith_data = cell(obs_zenith.n, 11);
 
 % Data processing loop
 for idt = 1:obs_zenith.n
@@ -58,7 +55,7 @@ for idt = 1:obs_zenith.n
     % Col-1: GPS Time
     zenith_data{idt,1} = obs_zenith.time.tow(idt);
     % Col-2: Positioning Solution (Ordinary Least Squares)
-    zenith_data{idt,2} = rtklib.xyz2llh(pos_est_zenith).*[R2D,R2D,1];
+    zenith_data{idt,2} = rtklib.xyz2llh(pos_est_zenith);
     % Col-3: Satellite PRN (1-32 GPS, 33-59 GLONASS, 60-95 Galileo, 96-105 QZSS, 106-150 Beidou)
     zenith_data{idt,3} = sv_zenith(:,1);
     % Col-4: Satellite Elevation Angle
