@@ -10,7 +10,7 @@
 % Col-5: Satellite Azimuth Angle (NED, North as zero)
 % Col-6,7,8: Full-ephemeris PRN, El, Az
 % Col-9: L1 C/N0, Pseudorange Residual, Carrier Phase [***some SV not available in Eph, excluded C/N0]
-% Col-10: L1 PRN, Raw Pseudorange, SV-XYZ-Position in ECEF for positioning
+% Col-10: L1 PRN, Pseudorange with receiver_bias correction, SV-XYZ-Position in ECEF for positioning
 % Col-11: L1 PRN, Doppler, SV-XYZ-Velocity in ECEF for velocity estimation
 % ------------------------------------------------------------------------
 
@@ -126,8 +126,8 @@ for idt = 1:obs_zenith.n
     zenith_data{idt,9} = [obs_zenith.L1.S(idt,~exclusion_bool)',pr_resi_zenith',...
         obs_zenith.L1.L(idt,~exclusion_bool)'];
 
-    % Col-10: L1 PRN, Raw Pseudorange, SV-XYZ-Position in ECEF for positioning
-    zenith_data{idt,10} = sv_zenith;
+    % Col-10: L1 PRN, Pseudorange with receiver_bias correction, SV-XYZ-Position in ECEF for positioning
+    zenith_data{idt,10} = [sv_zenith(:,1),sv_zenith(:,2)-dtr(idt,temp_sys)*c,sv_zenith(:,3:5)]; % Include receiver bias correction for pseudorange.
     
     % Col-11: L1 PRN, Doppler, SV-XYZ-Velocity in ECEF for velocity estimation
     zenith_data{idt,11} = [sv_zenith(:,1), obs_zenith.L1.D(idt,~exclusion_bool)',sat_zenith.vx(idt,~exclusion_bool)'...
@@ -211,8 +211,8 @@ for idt = 1:obs_nadir.n
     nadir_data{idt,9} = [obs_nadir.L1.S(idt,~exclusion_bool)',pr_resi_nadir',...
         obs_nadir.L1.L(idt,~exclusion_bool)'];
 
-    % Col-10: L1 PRN, Raw Pseudorange, SV-XYZ-Position in ECEF for positioning
-    nadir_data{idt,10} = sv_nadir;
+    % Col-10: L1 PRN, Pseudorange with receiver_bias correction, SV-XYZ-Position in ECEF for positioning
+    nadir_data{idt,10} = [sv_nadir(:,1),sv_nadir(:,2)-dtr(idt,temp_sys)*c,sv_nadir(:,3:5)]; % Include receiver bias correction for pseudorange.;
     
     % Col-11: L1 PRN, Doppler, SV-XYZ-Velocity in ECEF for velocity estimation
     nadir_data{idt,11} = [sv_nadir(:,1), obs_nadir.L1.D(idt,~exclusion_bool)',sat_nadir.vx(idt,~exclusion_bool)'...
