@@ -32,99 +32,40 @@ nadir_data = dual_antenna_data{1,2};
 [~, prn_nadir, ele_angle_nadir, azi_angle_nadir, CNR_nadir, pr_resi_nadir, ...
     carrier_ph_nadir, pseudorange_nadir, dopp_nadir] = extract_measurements(nadir_data_new);
 
+% Find the indexes of prns that exist in both zenith_data and nadir_data
+[~,id_zenith, id_nadir] = intersect(prn_zenith,prn_nadir);
+
 %% Percentage of SV received
 
-sv_ratio_z = NaN(height(zenith_data),1); % Zenith data
-for epoch = 1:height(zenith_data)
-    sv_ratio_z(epoch) = length(zenith_data{epoch,3})/length(zenith_data{epoch,6});
+% Obtain the SV ratios for both zenith and nadir data
+sv_ratio_zenith = NaN(length(gps_time),1);
+sv_ratio_nadir = NaN(length(gps_time),1);
+sv_ratio_n2z = NaN(length(gps_time),1); % Ratio of SV received by nadir antenna over SV received by zenith antenna
+for epoch = 1:length(gps_time)
+    sv_ratio_zenith(epoch) = length(zenith_data_new{epoch,3})/length(zenith_data_new{epoch,6});
+    sv_ratio_nadir(epoch) = length(nadir_data_new{epoch,3})/length(nadir_data_new{epoch,6});
+    sv_ratio_n2z(epoch) = length(nadir_data_new{epoch,3})/length(zenith_data_new{epoch,3});
 end
 
-sv_ratio_n = NaN(height(nadir_data),1); % Nadir data
-for epoch = 1:height(nadir_data)
-    sv_ratio_n(epoch) = length(nadir_data{epoch,3})/length(nadir_data{epoch,6});
-end
-
-% Plot SV reception ratio distributions
+% Histogram plot
 figure();
 grid on;
 hold on;
-histogram(sv_ratio_z,'Normalization','pdf','BinWidth',0.01);
-histogram(sv_ratio_n,'Normalization','pdf','BinWidth',0.01);
+histogram(sv_ratio_zenith,'Normalization','pdf','BinWidth',0.01);
+histogram(sv_ratio_nadir,'Normalization','pdf','BinWidth',0.01);
 hold off;
+xlim([0.3 0.9]);
 xlabel('Satellite Reception Ratio');
-ylabel('Probability Distribution');
-legend('Zenith Data', 'Nadir Data');
+ylabel('Normalized Probability Distribution');
+legend('Zenith RHCP Antenna', 'Nadir LHCP Antenna');
 
-%% Pseudorange difference between zenith and nadir (nadir - zenith)
+% Plot ratio of SV received by nadir antenna over SV received by zenith
+% antenna on satellite imagery map
+sat_img_plot(cell2mat(zenith_data_new(:,2)), sv_ratio_n2z); % Use zenith SPP result as georeference coordinates
+clim([0.5 2.5]);
+colormap('turbo');
+title('Nadir-Received SV/Zenith-Received SV');
 
-pr_difference = cell(height(zenith_data),1);
+%% CNR ratio
 
-% Use the timestamps on zenith_data as a standard
-for epoch = 1:height(zenith_data)
-    
-    temp_time = round(zenith_data{epoch,1});
-    % Align nadir_data timestamp to the zenith_data timestamp
-    idn = find(round(cell2mat(nadir_data(:,1)))==temp_time);
-    if isempty(idn)
-        % No nadir data in this timestamp
-        continue;
-    end
-
-    % Only use satellites that are received by both the zenith and nadir
-    % antenna
-    temp_prn_list = intersect(zenith_data{epoch,3}, nadir_data{idn,3});
-    
-    % Column 1: prn
-    % Column 2: pseudorange difference
-    % Column 3: elevation angle (zenith as standard)
-    % Column 4: azimuth angle (zenith as standard)
-    % Column 5: CNR ratio (nadir/zenith)
-    pr_difference{epoch} = [temp_prn_list, ...
-        nadir_data{idn,10}(ismember(nadir_data{idn,3},temp_prn_list),2)-zenith_data{epoch,10}(ismember(zenith_data{epoch,3},temp_prn_list),2), ...
-        zenith_data{epoch,4}(ismember(zenith_data{epoch,3},temp_prn_list)), ...
-        zenith_data{epoch,5}(ismember(zenith_data{epoch,3},temp_prn_list)), ...
-        nadir_data{idn,9}(ismember(nadir_data{idn,3},temp_prn_list),1)./zenith_data{epoch,9}(ismember(zenith_data{epoch,3},temp_prn_list),1)];
-
-end
-
-% Compile pr_difference into matrix form (remove epoch dimension)
-pr_difference_mat = vertcat(pr_difference{:,1});
-
-% Plot pseudorange difference vs elevation angle
-figure();
-grid on;
-scatter(pr_difference_mat(:,3), pr_difference_mat(:,2),'filled');
-xlabel('Elevation Angle (From Zenith Data)');
-ylabel('Difference in Nadir and Zenith Pseudorange (m)');
-
-% Plot pseudorange difference vs azimuth (on polar coordinates)
-figure();
-grid on;
-polarscatter(deg2rad(pr_difference_mat(:,4)), pr_difference_mat(:,2),'filled');
-hold on;
-% Configure the polar axis
-pax = gca;
-pax.ThetaZeroLocation = 'top';
-pax.ThetaDir = 'clockwise';
-pax.RAxisLocation = 0;
-% Configure figure and axis titles
-thetaticks([0 30 60 90 120 150 180 210 240 270 300 330]);
-thetaticklabels({'North','30','60','East','120','150','South','210','240','West','300','330'});
-title('Difference in Nadir and Zenith Pseudorange (m)');
-hold off;
-
-% Plot pseudorange difference vs CNR ratio
-figure();
-grid on;
-scatter(pr_difference_mat(:,5), pr_difference_mat(:,2),'filled');
-xlabel('Difference in Zenith and Nadir CNR (dB-Hz)');
-ylabel('Difference in Nadir and Zenith Pseudorange (m)');
-
-% Plot CNR ratio distribution
-figure();
-grid on;
-histogram(pr_difference_mat(:,5),'BinWidth',0.01)
-xlim([0, 2.5])
-xlabel('CNR ratio between Nadir and Zenith');
-ylabel('Probability Distribution');
 

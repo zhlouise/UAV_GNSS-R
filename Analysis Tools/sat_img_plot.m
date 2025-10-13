@@ -11,7 +11,8 @@ function sat_img_plot(pos_llh, data)
 
 figure();
 
-geoplot(pos_llh(:,1), pos_llh(:,2), data, 'MarkerSize', 10);
+geoscatter(pos_llh(:,1), pos_llh(:,2), 20, data, 'filled');
+colorbar;
 geobasemap('satellite');
 
 end
