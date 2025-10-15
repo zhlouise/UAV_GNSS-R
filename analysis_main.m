@@ -38,6 +38,10 @@ altitude_ag = cal_altitude_above_ground_HK(cell2mat(zenith_data_new(:,2)),'examp
 % Find the indexes of prns that exist in both zenith_data and nadir_data
 [~,id_zenith, id_nadir] = intersect(prn_zenith,prn_nadir);
 
+% Obtain the First Fresnel Zones of the reflected signals
+[centroid_lat, centroid_lon, a, b] = cal_fresnel_zones(cell2mat(zenith_data_new(:,2)), altitude_ag, ...
+    ele_angle_zenith(:,id_zenith), azi_angle_zenith(:,id_zenith));
+
 %% Percentage of SV received
 
 % Obtain the SV ratios for both zenith and nadir data
