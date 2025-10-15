@@ -32,6 +32,9 @@ nadir_data = dual_antenna_data{1,2};
 [~, prn_nadir, ele_angle_nadir, azi_angle_nadir, CNR_nadir, pr_resi_nadir, ...
     carrier_ph_nadir, pseudorange_nadir, dopp_nadir] = extract_measurements(nadir_data_new);
 
+% Calculate the above ground altitude
+altitude_ag = cal_altitude_above_ground_HK(cell2mat(zenith_data_new(:,2)),'example_data/Whole_HK_DTM_5m.asc');
+
 % Find the indexes of prns that exist in both zenith_data and nadir_data
 [~,id_zenith, id_nadir] = intersect(prn_zenith,prn_nadir);
 

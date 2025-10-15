@@ -33,7 +33,7 @@ obs_nadir = gt.Gobs([nadir_path, nadir_filename]);
 [eph_filename, eph_path] = uigetfile('.nav','Select the ephemeris file.');
 nav = gt.Gnav([eph_path, eph_filename]);
 
-%% Select constelations
+%% Select constellations
 obs_zenith = obs_zenith.selectSat(obs_zenith.sys==gt.C.SYS_GPS | obs_zenith.sys==gt.C.SYS_QZS | ...
     obs_zenith.sys==gt.C.SYS_CMP | obs_zenith.sys==gt.C.SYS_GAL | obs_zenith.sys==gt.C.SYS_GLO);
 obs_nadir = obs_nadir.selectSat(obs_nadir.sys==gt.C.SYS_GPS | obs_nadir.sys==gt.C.SYS_QZS | ...
