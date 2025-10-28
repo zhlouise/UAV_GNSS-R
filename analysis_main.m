@@ -42,6 +42,18 @@ altitude_ag = cal_altitude_above_ground_HK(cell2mat(zenith_data_new(:,2)),'examp
 [centroid_lat, centroid_lon, a, b] = cal_fresnel_zones(cell2mat(zenith_data_new(:,2)), altitude_ag, ...
     ele_angle_zenith(:,id_zenith), azi_angle_zenith(:,id_zenith));
 
+%% Satellite Sky Plots
+
+validIdx = ~isnan(azi_angle_zenith) & ~isnan(ele_angle_zenith) & ele_angle_zenith > 0;
+figure();
+skyplot(azi_angle_zenith(validIdx), ele_angle_zenith(validIdx));
+title('Satellites Received by Zenith Receiver');
+
+validIdx = ~isnan(azi_angle_nadir) & ~isnan(ele_angle_nadir) & ele_angle_nadir > 0;
+figure();
+skyplot(azi_angle_nadir(validIdx), ele_angle_nadir(validIdx));
+title('Satellites Received by Nadir Receiver');
+
 %% Percentage of SV received
 
 % Obtain the SV ratios for both zenith and nadir data
@@ -75,4 +87,16 @@ title('Nadir-Received SV/Zenith-Received SV');
 
 %% CNR ratio
 
+CNR_ratio = CNR_nadir(:,id_nadir(1))./CNR_zenith(:,id_zenith(1));
+fresnel_zone_heatmap(centroid_lat(:,id_zenith(1)),centroid_lon(:,id_zenith(1)), a(:,id_zenith(1)), b(:,id_zenith(1)), azi_angle_zenith(:,id_zenith(1)), CNR_ratio);
 
+%% Pseudorange difference
+
+pr_diff = pseudorange_nadir(:,id_nadir(1))-pseudorange_zenith(:,id_zenith(1));
+fresnel_zone_heatmap(centroid_lat(:,id_zenith(1)),centroid_lon(:,id_zenith(1)), a(:,id_zenith(1)), b(:,id_zenith(1)), azi_angle_zenith(:,id_zenith(1)), pr_diff);
+
+%% Combined CNR ratio & pseudorange difference factor
+
+CNR_pr_factor = CNR_zenith(:,id_zenith(1))./CNR_nadir(:,id_nadir(1)).*...
+    (pseudorange_nadir(:,id_nadir(1))-pseudorange_zenith(:,id_zenith(1)));
+fresnel_zone_heatmap(centroid_lat(:,id_zenith(1)), centroid_lon(:,id_zenith(1)), a(:,id_zenith(1)), b(:,id_zenith(1)), azi_angle_zenith(:,id_zenith(1)), CNR_pr_factor);

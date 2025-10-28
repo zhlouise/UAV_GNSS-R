@@ -11,6 +11,7 @@ function sat_img_plot(pos_llh, data)
 figure();
 
 geoscatter(pos_llh(:,1), pos_llh(:,2), 20, data, 'filled');
+colormap(hsv);
 colorbar;
 geobasemap('satellite');
 
