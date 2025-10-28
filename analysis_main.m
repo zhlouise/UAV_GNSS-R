@@ -48,11 +48,15 @@ validIdx = ~isnan(azi_angle_zenith) & ~isnan(ele_angle_zenith) & ele_angle_zenit
 figure();
 skyplot(azi_angle_zenith(validIdx), ele_angle_zenith(validIdx));
 title('Satellites Received by Zenith Receiver');
+data_skyplot(ele_angle_zenith, azi_angle_zenith, CNR_zenith);
+title('RHCP CNR')
 
 validIdx = ~isnan(azi_angle_nadir) & ~isnan(ele_angle_nadir) & ele_angle_nadir > 0;
 figure();
 skyplot(azi_angle_nadir(validIdx), ele_angle_nadir(validIdx));
 title('Satellites Received by Nadir Receiver');
+data_skyplot(ele_angle_nadir, azi_angle_nadir, CNR_nadir);
+title('LHCP CNR')
 
 %% Percentage of SV received
 
