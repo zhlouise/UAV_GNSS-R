@@ -46,6 +46,11 @@ for epoch = 1:length(gps_time)
     % Find the index of each received satellite in prn
     [~,idx] = ismember(data_all{epoch,3},prn);
 
+    % If no data, proceed to next loop
+    if isempty(idx)
+        continue;
+    end
+
     % Populate measurement matrices
     ele_angle(epoch,idx) = data_all{epoch,4};
     azi_angle(epoch,idx) = data_all{epoch,5};
