@@ -28,7 +28,7 @@ nadir_data = dual_antenna_data{1,2};
 ulogOBJ = ulogreader([path, filename]);
 flight_log = readTopicMsgs(ulogOBJ);
 
-%% Process dual antenna data
+%% Extract and process dual antenna information
 
 % Sync zenith_data and nadir_data with flight_log timestamps
 [zenith_data_new,nadir_data_new] = sync_dual_antenna_data(zenith_data, nadir_data, flight_log);
@@ -38,6 +38,11 @@ flight_log = readTopicMsgs(ulogOBJ);
     carrier_ph_zenith, pseudorange_zenith, dopp_zenith] = extract_measurements(zenith_data_new);
 [~, prn_nadir, ele_angle_nadir, azi_angle_nadir, CNR_nadir, pr_resi_nadir, ...
     carrier_ph_nadir, pseudorange_nadir, dopp_nadir] = extract_measurements(nadir_data_new);
+
+% Extract ground truth
+ground_truth = extract_ground_truth(gps_time, flight_log);
+
+% Calculate pseudorange error
 
 % Calculate the above ground altitude
 altitude_ag = cal_altitude_above_ground_HK(cell2mat(zenith_data_new(:,2)),'example_data/Whole_HK_DTM_5m.asc');

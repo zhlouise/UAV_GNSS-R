@@ -8,13 +8,13 @@ function [zenith_data_new,nadir_data_new] = sync_dual_antenna_data(zenith_data, 
 %       Col-1: GPS Time
 %       Col-2: Positioning Solution (Ordinary Least Squares - corrected by rtklib)
 %       Col-3: Satellite PRN (1-32 GPS, 33-59 GLONASS, 60-95 Galileo, 96-105 QZSS, 106-150 Beidou)
-%       Col-4: Satellite Elevation Angle
+%       Col-4: Satellite Elevation Angles
 %       Col-5: Satellite Azimuth Angle (NED, North as zero)
 %       Col-6,7,8: Full-ephemeris PRN, El, Az
 %       Col-9: L1 C/N0, Pseudorange Residual, Carrier Phase [***some SV not available in Eph, excluded C/N0]
 %       Col-10: L1 PRN, Pseudorange with receiver_bias correction, SV-XYZ-Position in ECEF for positioning
 %       Col-11: L1 PRN, Doppler, SV-XYZ-Velocity in ECEF for velocity estimation
-%   flight_log: Table of topic messages from .ulg file logged by Pixhawk
+%   flight_log: table of topic messages from .ulg file logged by Pixhawk
 % Output: 
 %   zenith_data_new & nadir_data_new
 %       The new data cells have the same dimensions. The first timestamp in
