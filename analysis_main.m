@@ -17,14 +17,21 @@ clc;
 clear;
 close all;
 
-% Prompt for input of processed dual antenna files
+% Prompt for input of processed dual antenna data files
 [filename, path] = uigetfile('.mat','Select the processed dual antenna .mat file.');
 load([path, filename]);
 zenith_data = dual_antenna_data{1,1};
 nadir_data = dual_antenna_data{1,2};
 
-% Sync zenith_data and nadir_data
-[zenith_data_new,nadir_data_new] = sync_dual_antenna_data(zenith_data, nadir_data);
+% Prompt for input of Pixhawk ulog file
+[filename, path] = uigetfile('.ulg','Select the .ulg file recorded on Pixhawk flight controller.');
+ulogOBJ = ulogreader([path, filename]);
+flight_log = readTopicMsgs(ulogOBJ);
+
+%% Process dual antenna data
+
+% Sync zenith_data and nadir_data with flight_log timestamps
+[zenith_data_new,nadir_data_new] = sync_dual_antenna_data(zenith_data, nadir_data, flight_log);
 
 % Extract measurement data
 [gps_time, prn_zenith, ele_angle_zenith, azi_angle_zenith, CNR_zenith, pr_resi_zenith, ...
@@ -42,21 +49,21 @@ altitude_ag = cal_altitude_above_ground_HK(cell2mat(zenith_data_new(:,2)),'examp
 [centroid_lat, centroid_lon, a, b] = cal_fresnel_zones(cell2mat(zenith_data_new(:,2)), altitude_ag, ...
     ele_angle_zenith(:,id_zenith), azi_angle_zenith(:,id_zenith));
 
-%% Satellite Sky Plots
+%% Satellite sky plots
 
 validIdx = ~isnan(azi_angle_zenith) & ~isnan(ele_angle_zenith) & ele_angle_zenith > 0;
 figure();
 skyplot(azi_angle_zenith(validIdx), ele_angle_zenith(validIdx));
 title('Satellites Received by Zenith Receiver');
 data_skyplot(ele_angle_zenith, azi_angle_zenith, CNR_zenith);
-title('RHCP CNR')
+title('RHCP CNR');
 
 validIdx = ~isnan(azi_angle_nadir) & ~isnan(ele_angle_nadir) & ele_angle_nadir > 0;
 figure();
 skyplot(azi_angle_nadir(validIdx), ele_angle_nadir(validIdx));
 title('Satellites Received by Nadir Receiver');
 data_skyplot(ele_angle_nadir, azi_angle_nadir, CNR_nadir);
-title('LHCP CNR')
+title('LHCP CNR');
 
 %% Percentage of SV received
 
