@@ -44,14 +44,15 @@ ground_truth = extract_ground_truth(gps_time, flight_log);
 
 % Calculate pseudorange error
 
+
 % Calculate the above ground altitude
-altitude_ag = cal_altitude_above_ground_HK(cell2mat(zenith_data_new(:,2)),'example_data/Whole_HK_DTM_5m.asc');
+altitude_ag = cal_altitude_above_ground_HK(ground_truth,'example_data/Whole_HK_DTM_5m.asc');
 
 % Find the indexes of prns that exist in both zenith_data and nadir_data
-[~,id_zenith, id_nadir] = intersect(prn_zenith,prn_nadir);
+[~,id_zenith, id_nadir] = intersect(prn_zenith, prn_nadir);
 
 % Obtain the First Fresnel Zones of the reflected signals
-[centroid_lat, centroid_lon, a, b] = cal_fresnel_zones(cell2mat(zenith_data_new(:,2)), altitude_ag, ...
+[centroid_lat, centroid_lon, a, b] = cal_fresnel_zones(ground_truth, altitude_ag, ...
     ele_angle_zenith(:,id_zenith), azi_angle_zenith(:,id_zenith));
 
 %% Satellite sky plots
@@ -96,23 +97,17 @@ legend('Zenith RHCP Antenna', 'Nadir LHCP Antenna');
 
 % Plot ratio of SV received by nadir antenna over SV received by zenith
 % antenna on satellite imagery map
-sat_img_plot(cell2mat(zenith_data_new(:,2)), sv_ratio_n2z); % Use zenith SPP result as georeference coordinates
+sat_img_plot(ground_truth, sv_ratio_n2z); % Use zenith SPP result as georeference coordinates
 clim([0.5 2.5]);
 colormap('turbo');
 title('Nadir-Received SV/Zenith-Received SV');
 
 %% CNR ratio
 
-CNR_ratio = CNR_nadir(:,id_nadir(1))./CNR_zenith(:,id_zenith(1));
-fresnel_zone_heatmap(centroid_lat(:,id_zenith(1)),centroid_lon(:,id_zenith(1)), a(:,id_zenith(1)), b(:,id_zenith(1)), azi_angle_zenith(:,id_zenith(1)), CNR_ratio);
+CNR_ratio = CNR_nadir(:,id_nadir)./CNR_zenith(:,id_zenith);
+fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_ratio);
 
 %% Pseudorange difference
 
-pr_diff = pseudorange_nadir(:,id_nadir(1))-pseudorange_zenith(:,id_zenith(1));
-fresnel_zone_heatmap(centroid_lat(:,id_zenith(1)),centroid_lon(:,id_zenith(1)), a(:,id_zenith(1)), b(:,id_zenith(1)), azi_angle_zenith(:,id_zenith(1)), pr_diff);
-
-%% Combined CNR ratio & pseudorange difference factor
-
-CNR_pr_factor = CNR_zenith(:,id_zenith(1))./CNR_nadir(:,id_nadir(1)).*...
-    (pseudorange_nadir(:,id_nadir(1))-pseudorange_zenith(:,id_zenith(1)));
-fresnel_zone_heatmap(centroid_lat(:,id_zenith(1)), centroid_lon(:,id_zenith(1)), a(:,id_zenith(1)), b(:,id_zenith(1)), azi_angle_zenith(:,id_zenith(1)), CNR_pr_factor);
+pr_diff = pseudorange_nadir(:,id_nadir)-pseudorange_zenith(:,id_zenith);
+fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), pr_diff);

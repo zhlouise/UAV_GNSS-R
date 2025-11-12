@@ -171,7 +171,7 @@ h.MarkerEdgeAlpha = 0.3;
 h.MarkerFaceAlpha = 0.7;
 
 % Add colorbar and styling
-colormap(hsv);
+colormap(turbo);
 colorbar;
 
 hold off;
