@@ -32,13 +32,17 @@ timestamp_start_gps = utcsec2gpstow(timestamp_start_utc/(1e+6)); % ulog utc time
 timestamp_end_gps = utcsec2gpstow(timestamp_end_utc/(1e+6));
 
 % Crop existing zenith_data
-zenith_data_new = zenith_data(find(round([zenith_data{:,1}])==timestamp_start_gps):...
-find(round([zenith_data{:,1}])==timestamp_end_gps),:);
+zenith_data_new = zenith_data(find(round([zenith_data{:,1}])==max(timestamp_start_gps, round([zenith_data{1,1}]))):...
+find(round([zenith_data{:,1}])==min(timestamp_end_gps,round([zenith_data{end,1}]))),:);
 
 % Align nadir_data with the timestamp of zenith_data_new
 nadir_data_new = cell(height(zenith_data_new), 11);
 for epoch = 1:height(zenith_data_new)
-    nadir_data_new(epoch,:) = nadir_data(round([nadir_data{:,1}])==round(zenith_data{epoch,1}), :);
+    try
+        nadir_data_new(epoch,:) = nadir_data(round([nadir_data{:,1}])==round(zenith_data_new{epoch,1}), :);
+    catch % If the nadir data does not exist in this epoch
+        continue;
+    end
 end
 
 end

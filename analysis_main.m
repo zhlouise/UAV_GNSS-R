@@ -42,8 +42,9 @@ flight_log = readTopicMsgs(ulogOBJ);
 % Extract ground truth
 ground_truth = extract_ground_truth(gps_time, flight_log);
 
-% Calculate pseudorange error
-
+% Calculate pseudorange errors
+zenith_pr_error = cal_SD_pr_error(zenith_data_new, ground_truth);
+nadir_pr_error = cal_SD_pr_error(nadir_data_new, ground_truth);
 
 % Calculate the above ground altitude
 altitude_ag = cal_altitude_above_ground_HK(ground_truth,'example_data/Whole_HK_DTM_5m.asc');
@@ -106,6 +107,20 @@ title('Nadir-Received SV/Zenith-Received SV');
 
 CNR_ratio = CNR_nadir(:,id_nadir)./CNR_zenith(:,id_zenith);
 fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_ratio);
+
+%% Pseudorange error
+
+figure();
+hold on;
+grid on;
+histogram(zenith_pr_error(zenith_pr_error<100 & zenith_pr_error>-100 & zenith_pr_error~=0), ...
+    'Normalization','pdf','BinWidth',1);
+histogram(nadir_pr_error(nadir_pr_error<100 & nadir_pr_error>-100 & nadir_pr_error~=0), ...
+    'Normalization','pdf','BinWidth',1);
+hold off;
+xlabel('Single Difference Pseudorange Error (m)');
+ylabel('Normalized Probability Distribution');
+legend('Zenith RHCP Antenna', 'Nadir LHCP Antenna');
 
 %% Pseudorange difference
 
