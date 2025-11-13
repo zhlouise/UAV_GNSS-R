@@ -32,7 +32,7 @@ obs = obs.selectSat(obs.sys==gt.C.SYS_GPS | obs.sys==gt.C.SYS_QZS | ...
     obs.sys==gt.C.SYS_CMP | obs.sys==gt.C.SYS_GAL | obs.sys==gt.C.SYS_GLO);
 
 % Calculate satellite positions and residuals
-gt_xyz = rtklib.llh2xyz(ground_truth); % Convert ground_truth from LLH to ECEF
+gt_xyz = rtklib.llh2xyz(ground_truth(~cellfun(@isempty, data_all(:,1)),:)); % Convert ground_truth from LLH to ECEF
 pos_ini = gt.Gpos(gt_xyz,"xyz"); 
 sat = gt.Gsat(obs, nav);
 sat.setRcvPos(pos_ini);
@@ -68,34 +68,40 @@ pr_error = NaN(length(data_all),length(prns));
 
 for idt = 1:length(data_all)
 
+    % If data_all is empty for this epoch, continue to next loop
+    if isempty(data_all(idt,1))
+        continue;
+    end
+
     % Separate data by constellation in the following structure: 
     % [prn, elevation angle, corrected pseudorange, range]
-
-    % GPS
-    [~, idx_GPS] = ismember(cell2mat(data_all(idt,3)),prn_GPS);
-    GPS_data = [data_all{idt,3}(idx_GPS>0),data_all{idt,4}(idx_GPS>0),corrected_pseudorange{idt,1}(idx_GPS>0,2),...
-        corrected_pseudorange{idt,1}(idx_GPS>0,3)];
-    % GLONASS
-    [~, idx_GLONASS] = ismember(cell2mat(data_all(idt,3)),prn_GLONASS);
-    GLONASS_data = [data_all{idt,3}(idx_GLONASS>0),data_all{idt,4}(idx_GLONASS>0),corrected_pseudorange{idt,1}(idx_GLONASS>0,2),...
-        corrected_pseudorange{idt,1}(idx_GLONASS>0,3)];
-    % Galileo
-    [~, idx_Galileo] = ismember(cell2mat(data_all(idt,3)),prn_Galileo);
-    Galileo_data = [data_all{idt,3}(idx_Galileo>0),data_all{idt,4}(idx_Galileo>0),corrected_pseudorange{idt,1}(idx_Galileo>0,2),...
-        corrected_pseudorange{idt,1}(idx_Galileo>0,3)];
-    % QZSS
-    [~, idx_QZSS] = ismember(cell2mat(data_all(idt,3)),prn_QZSS);
-    QZSS_data = [data_all{idt,3}(idx_QZSS>0),data_all{idt,4}(idx_QZSS>0),corrected_pseudorange{idt,1}(idx_QZSS>0,2),...
-        corrected_pseudorange{idt,1}(idx_QZSS>0,3)];
-    % Beidou
-    [~, idx_Beidou] = ismember(cell2mat(data_all(idt,3)),prn_Beidou);
-    Beidou_data = [data_all{idt,3}(idx_Beidou>0),data_all{idt,4}(idx_Beidou>0),corrected_pseudorange{idt,1}(idx_Beidou>0,2),...
-        corrected_pseudorange{idt,1}(idx_Beidou>0,3)];
-
-    % Calculate pseudorange error
+    
     try % Supress any error -> pr_error entry becomes NaN
         % Calculate SD pseudorange error (Master satellite from highest
         % elevation angle) 
+        
+        % GPS
+        [~, idx_GPS] = ismember(cell2mat(data_all(idt,3)),prn_GPS);
+        GPS_data = [data_all{idt,3}(idx_GPS>0),data_all{idt,4}(idx_GPS>0),corrected_pseudorange{idt,1}(idx_GPS>0,2),...
+            corrected_pseudorange{idt,1}(idx_GPS>0,3)];
+        % GLONASS
+        [~, idx_GLONASS] = ismember(cell2mat(data_all(idt,3)),prn_GLONASS);
+        GLONASS_data = [data_all{idt,3}(idx_GLONASS>0),data_all{idt,4}(idx_GLONASS>0),corrected_pseudorange{idt,1}(idx_GLONASS>0,2),...
+            corrected_pseudorange{idt,1}(idx_GLONASS>0,3)];
+        % Galileo
+        [~, idx_Galileo] = ismember(cell2mat(data_all(idt,3)),prn_Galileo);
+        Galileo_data = [data_all{idt,3}(idx_Galileo>0),data_all{idt,4}(idx_Galileo>0),corrected_pseudorange{idt,1}(idx_Galileo>0,2),...
+            corrected_pseudorange{idt,1}(idx_Galileo>0,3)];
+        % QZSS
+        [~, idx_QZSS] = ismember(cell2mat(data_all(idt,3)),prn_QZSS);
+        QZSS_data = [data_all{idt,3}(idx_QZSS>0),data_all{idt,4}(idx_QZSS>0),corrected_pseudorange{idt,1}(idx_QZSS>0,2),...
+            corrected_pseudorange{idt,1}(idx_QZSS>0,3)];
+        % Beidou
+        [~, idx_Beidou] = ismember(cell2mat(data_all(idt,3)),prn_Beidou);
+        Beidou_data = [data_all{idt,3}(idx_Beidou>0),data_all{idt,4}(idx_Beidou>0),corrected_pseudorange{idt,1}(idx_Beidou>0,2),...
+            corrected_pseudorange{idt,1}(idx_Beidou>0,3)];
+    
+        % Calculate pseudorange error
         pr_error_GPS = (GPS_data(:,3)-GPS_data(GPS_data(:,2)==max(GPS_data(:,2)),3))...
             -(GPS_data(:,4)-GPS_data(GPS_data(:,2)==max(GPS_data(:,2)),4));
         pr_error_GLONASS = GLONASS_data(:,3) - GLONASS_data(GLONASS_data(:,2)==max(GLONASS_data(:,2)),3)...

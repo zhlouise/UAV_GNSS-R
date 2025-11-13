@@ -31,17 +31,17 @@ prn = unique(vertcat(data_all{:,3}));
 
 % Pre-allocate ele_angle, azi_angle, CNR, pr_resi, carrier_ph, pseudorange,
 % and dopp matrices
-ele_angle = NaN(length(gps_time),length(prn));
-azi_angle = NaN(length(gps_time),length(prn));
-CNR = NaN(length(gps_time),length(prn));
-pr_resi = NaN(length(gps_time),length(prn));
-carrier_ph = NaN(length(gps_time),length(prn));
-pseudorange = NaN(length(gps_time),length(prn));
-dopp = NaN(length(gps_time),length(prn));
+ele_angle = NaN(height(data_all),length(prn));
+azi_angle = NaN(height(data_all),length(prn));
+CNR = NaN(height(data_all),length(prn));
+pr_resi = NaN(height(data_all),length(prn));
+carrier_ph = NaN(height(data_all),length(prn));
+pseudorange = NaN(height(data_all),length(prn));
+dopp = NaN(height(data_all),length(prn));
 
 % For each timestamp, find the index of received satellites in prn and
 % populate the measurement matrices
-for epoch = 1:length(gps_time)
+for epoch = 1:height(data_all)
 
     % Find the index of each received satellite in prn
     [~,idx] = ismember(data_all{epoch,3},prn);
