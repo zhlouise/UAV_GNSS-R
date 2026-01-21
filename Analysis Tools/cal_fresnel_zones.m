@@ -23,7 +23,7 @@ lambda = c/f; % Signal wavelength
 
 % Replicate altitude_ag and latitude, longitude and height of pos_llh 
 % for all the satellite instances for matrix operations
-altitude_ag_rep = repmat(altitude_ag,1,size(ele_angle,2));
+altitude_ag_rep = repmat(altitude_ag, 1, size(ele_angle,2));
 ref_lat_rep = repmat(pos_llh(:,1), 1, size(ele_angle,2));
 ref_lon_rep = repmat(pos_llh(:,2), 1, size(ele_angle,2));
 ref_height_rep = repmat(pos_llh(:,3), 1, size(ele_angle,2));
