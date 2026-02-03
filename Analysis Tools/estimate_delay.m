@@ -17,6 +17,6 @@ function reflection_delay = estimate_delay(altitude_ag, ele_angle)
 % operations
 altitude_ag_rep = repmat(altitude_ag, 1, size(ele_angle,2));
 
-reflection_delay = 2*altitude_ag_rep.*sind(ele_angle);
+reflection_delay = 2*altitude_ag_rep./sind(ele_angle);
 
 end
