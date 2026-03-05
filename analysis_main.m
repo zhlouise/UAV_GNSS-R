@@ -42,9 +42,9 @@ flight_log = readTopicMsgs(ulogOBJ);
 % Extract ground truth
 ground_truth = extract_ground_truth(gps_time, flight_log);
 
-% Calculate pseudorange errors
-zenith_pr_error = cal_SD_pr_error(zenith_data_new, ground_truth);
-nadir_pr_error = cal_SD_pr_error(nadir_data_new, ground_truth);
+% % Calculate pseudorange errors
+% zenith_pr_error = cal_SD_pr_error(zenith_data_new, ground_truth);
+% nadir_pr_error = cal_SD_pr_error(nadir_data_new, ground_truth);
 
 % Calculate the above ground altitude
 altitude_ag = cal_altitude_above_ground_HK(ground_truth,'example_data/Whole_HK_DTM_5m.asc');
@@ -122,7 +122,52 @@ xlabel('Single Difference Pseudorange Error (m)');
 ylabel('Normalized Probability Distribution');
 legend('Zenith RHCP Antenna', 'Nadir LHCP Antenna');
 
-%% Pseudorange difference
+%% Reflection delay and vegetation delay
 
+reflection_delay = estimate_delay(altitude_ag, ele_angle_nadir(:,id_nadir));
+reflection_delay_clean = reflection_delay;
+reflection_delay_clean(abs(reflection_delay_clean)>150) = NaN;
 pr_diff = pseudorange_nadir(:,id_nadir)-pseudorange_zenith(:,id_zenith);
-fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), pr_diff);
+pr_diff_clean = pr_diff;
+pr_diff_clean(abs(pr_diff_clean)>300) = NaN;
+clock_and_delay_est = pr_diff_clean-reflection_delay_clean;
+figure();
+histogram(clock_and_delay_est);
+xlabel("Pseudorange Difference - Estimated Reflection Delay (m)");
+ylabel("Frequency");
+
+%% Estimated vegetation delay
+est_clock_delay = mean(clock_and_delay_est, 2, 'omitnan'); % Estimated receiver clock delay for each epoch
+veg_delay = clock_and_delay_est - est_clock_delay;
+fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), veg_delay);
+
+%% Estimated vegetation delay vs reflection delay
+figure();
+tiledlayout('flow', 'TileSpacing', 'compact', 'Padding', 'compact');
+prn_aligned = prn_nadir(id_nadir);
+aligned_nadir = pseudorange_nadir(:,id_nadir);
+aligned_zenith = pseudorange_zenith(:,id_zenith);
+for id = 1:length(prn_nadir(id_nadir))
+    nexttile;
+    % plot(reflection_delay_clean(:,id));
+    % plot(aligned_zenith(:,id));
+    hold on;
+    plot(veg_delay(:,id));
+    % plot(aligned_nadir(:,id));
+    title(['PRN: ', num2str(prn_aligned(id))]);
+    xlabel('Epochs');
+    ylabel('Delay (m)');
+    % ylabel('Pseudorange (m)');
+    xlim([0,height(aligned_nadir)]);
+    % center each subplot’s limits on its own mean with same span
+    % ycenter = mean([aligned_zenith(:,id); aligned_nadir(:,id)],'omitnan');
+    % ylim([ycenter - 0.02e7/2, ycenter + 0.02e7/2]);
+    % ylim([-200 200]);
+end
+% legend('Zenith Pseudorange', 'Nadir Pseudorange');
+%legend('Reflection Delay', 'Vegetation Delay');
+
+%% Temporal jumps in pseudorange difference
+zenith_jumps = diff(aligned_zenith, 1, 1);  % epochs-1 × satellites
+nadir_jumps  = diff(aligned_nadir, 1, 1);
+pr_diff_jumps = diff(pr_diff, 1, 1);

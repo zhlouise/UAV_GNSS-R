@@ -30,7 +30,7 @@ sat_img_plot(pos_llh(validIdx,:), dv(validIdx));
 hold on;
 
 % Setup for ellipse plotting
-nPoints = 96;
+nPoints = 48;
 t = linspace(0, 2*pi, nPoints);
 cmap = jet(256);
 dataMin = min(dv(validIdx));

@@ -21,6 +21,9 @@ f = gt.C.FREQ1; % L1/E1/B1C frequency
 c = gt.C.CLIGHT; % Speed of light
 lambda = c/f; % Signal wavelength
 
+% Filter out invalid ele_angles
+ele_angle(ele_angle<0) = NaN;
+
 % Replicate altitude_ag and latitude, longitude and height of pos_llh 
 % for all the satellite instances for matrix operations
 altitude_ag_rep = repmat(altitude_ag, 1, size(ele_angle,2));
