@@ -1,8 +1,10 @@
-function fresnel_zone_heatmap(centroid_lat, centroid_lon, a, b, azi_angle, data)
+function [lat_grid, lon_grid, data_grid, lat_lim, lon_lim] = fresnel_zone_heatmap(centroid_lat, centroid_lon, a, b, azi_angle, data)
 % -------------------------------------------------------------------------
 % Rasterizes First Fresnel Zone (FFZ) ellipses using precomputed geometry
 % to a georeferenced heatmap. Where ellipses overlap, each cell value is
-% the mean of the provided per-ellipse values.
+% the mean of the provided per-ellipse values. This function does so by
+% rasterizing the FFZ data onto a georeferenced grid. 
+%
 % Inputs:
 %   centroid_lat: centroid latitude of the FFZ ellipse (n*m matrix) 
 %   centroid_lon: centroid longitude of the FFZ ellipse (n*m matrix) 
@@ -10,170 +12,114 @@ function fresnel_zone_heatmap(centroid_lat, centroid_lon, a, b, azi_angle, data)
 %   b: semi-minor axis of the FFZ in meters (ENU coordinate) (n*m matrix) 
 %   azi_angle: satellite azimuth angle (n*m matrix)
 %   data: measurement values to be visualized (n*m matrix)
+% Outputs:
+%   lat_grid: latitude of all grid cells to be plotted (vector)
+%   lon_grid: longitude of all grid cells to be plotted (vector)
+%   data_grid: data value of all grid cells to be plotted (vector)
+%   lat_lim: latitude limits of the grid [lat_min lat_max]
+%   lon_lim: longitude limits of the grid [lon_min lon_max]
 % -------------------------------------------------------------------------
 
 % Flatten inputs to vectors
-latv = centroid_lat(:);
-lonv = centroid_lon(:);
-av = a(:);
-bv = b(:);
-azv = azi_angle(:);
-dv = data(:);
+centroid_lat_v = centroid_lat(:);
+centroid_lon_v = centroid_lon(:);
+a_v = a(:);
+b_v = b(:);
+az_v = azi_angle(:);
+data_v = data(:);
 
-% Filter valid data
-validIdx = ~isnan(latv) & ~isnan(lonv) & ~isnan(av) & ~isnan(bv) & ~isnan(azv) & ~isnan(dv) & (av>0) & (bv>0);
+% Filter out invalid data
+valid_idx = ~isnan(centroid_lat_v) & ~isnan(centroid_lon_v) & ~isnan(a_v) & ~isnan(b_v) & ~isnan(az_v) & ~isnan(data_v) & (a_v>0) & (b_v>0);
+centroid_lat_v = centroid_lat_v(valid_idx);
+centroid_lon_v = centroid_lon_v(valid_idx);
+a_v = a_v(valid_idx);
+b_v = b_v(valid_idx);
+az_v = az_v(valid_idx);
+data_v = data_v(valid_idx);
+num_data = numel(centroid_lat_v); % Number of data points
 
-if ~any(validIdx)
-    error('No valid data points found');
-end
+% Determine grid bounds (with added padding based on maximum ellipse size,
+% which is an approximate conversion from distance to degrees in llh)
+lat_min = min(centroid_lat_v) - max(a_v)/111320;
+lat_max = max(centroid_lat_v) + max(a_v)/111320;
+lon_min = min(centroid_lon_v) - max(a_v)/(111320*cosd(mean(centroid_lat_v))); % Using mean lat for approximation
+lon_max = max(centroid_lon_v) + max(a_v)/(111320*cosd(mean(centroid_lat_v)));
 
-% Extract valid data only
-validLat = latv(validIdx);
-validLon = lonv(validIdx);
-validA = av(validIdx);
-validB = bv(validIdx);
-validAz = azv(validIdx);
-validData = dv(validIdx);
-nValid = numel(validLat);
+% Grid resolution setting
+resolution = min(b_v)/2; % In meters
+resolution_deg = resolution/111320; % Approximated in degrees in degrees
+fprintf('Grid resolution: %.6f degrees\n', resolution_deg);
 
-fprintf('Processing %d ellipses...\n', nValid);
-
-% Determine grid bounds with some padding
-latMin = min(validLat);
-latMax = max(validLat);
-lonMin = min(validLon);
-lonMax = max(validLon);
-
-% Add padding based on maximum ellipse size
-maxSemiMajor = max(validA);
-paddingLat = maxSemiMajor / 111320;
-paddingLon = maxSemiMajor / (111320 * cosd(mean(validLat)));
-
-latMin = latMin - paddingLat;
-latMax = latMax + paddingLat;
-lonMin = lonMin - paddingLon;
-lonMax = lonMax + paddingLon;
-
-% OPTIMIZATION 1: Use adaptive resolution
-meanSemiMinor = mean(validB);
-resolution = meanSemiMinor / 8;  % More reasonable resolution
-resolutionDeg = resolution / 111320;
-
-fprintf('Grid resolution: %.6f degrees\n', resolutionDeg);
-
-% Create grid
-latGrid = latMin:resolutionDeg:latMax;
-lonGrid = lonMin:resolutionDeg:lonMax;
-[nRows, nCols] = deal(length(latGrid), length(lonGrid));
-
-fprintf('Grid size: %d x %d = %d total points\n', nRows, nCols, nRows*nCols);
+% Allocate grid
+grid_lat = lat_min:resolution_deg:lat_max;
+grid_lon = lon_min:resolution_deg:lon_max;
 
 % Initialize accumulation arrays
-valueSum = zeros(nRows, nCols);
-weightSum = zeros(nRows, nCols);
+value_sum = zeros(length(grid_lat), length(grid_lon)); % Sum of values for each grid point
+weight_sum = zeros(length(grid_lat), length(grid_lon)); % Number of data points that fall on each grid point
 
-% OPTIMIZATION 2: Precompute constants
-metersPerDegLat = 111320;
-R_earth = 6371000; % Earth radius in meters
+% Loop for each FFZ to calculate data value at each grid point within the FFZ
+for id = 1:num_data
+    
+    % Define bounds to minimize points to search in the grid
+    lat_lowerbound = centroid_lat_v(id) - a_v(id)/111320;
+    lat_upperbound = centroid_lat_v(id) + a_v(id)/111320;
+    lon_lowerbound = centroid_lon_v(id) - a_v(id)/(111320*cosd(centroid_lat_v(id)));
+    lon_upperbound = centroid_lon_v(id) + a_v(id)/(111320*cosd(centroid_lat_v(id)));
 
-% Process each valid ellipse with progress indicator
-fprintf('Processing ellipses: ');
-progressInterval = max(1, floor(nValid/10));
+    % Find grid points within bound
+    [searchgrid_lat, searchgrid_lon] = meshgrid(grid_lat(grid_lat>=lat_lowerbound & grid_lat<=lat_upperbound), ...
+        grid_lon(grid_lon>=lon_lowerbound & grid_lon<=lon_upperbound));
+    searchgrid_lat_v = searchgrid_lat(:);
+    searchgrid_lon_v = searchgrid_lon(:);
+    
+    % Convert search grid points to ENU coordinates
+    [searchgrid_enu, ~] = rtklib.llh2enu([searchgrid_lat_v,searchgrid_lon_v,zeros(length(searchgrid_lat_v),1)],...
+        [centroid_lat_v(id),centroid_lon_v(id),0]);
+    east = searchgrid_enu(:,1);
+    north = searchgrid_enu(:,2);
 
-for k = 1:nValid
-    if mod(k, progressInterval) == 0
-        fprintf('%d... ', k);
-    end
+    % Convert azimuth (clockwise from North) to rotation angle (counterclockwise from East)
+    theta = 90 - az_v(id);
     
-    a_k = validA(k);
-    b_k = validB(k);
-    az_k = validAz(k);
-    lat0 = validLat(k);
-    lon0 = validLon(k);
-    dataVal = validData(k);
-    
-    % Convert azimuth to rotation angle (CCW from East)
-    theta_k = 90 - az_k;
-    
-    % OPTIMIZATION 3: More efficient bounding box calculation
-    metersPerDegLon = 111320 * cosd(lat0);
-    halfHeightDeg = a_k / metersPerDegLat;  % Use semi-major for conservative bounds
-    halfWidthDeg = a_k / metersPerDegLon;
-    
-    bboxLat = [lat0 - halfHeightDeg, lat0 + halfHeightDeg];
-    bboxLon = [lon0 - halfWidthDeg, lon0 + halfWidthDeg];
-    
-    % Find grid indices within bounding box
-    latIdx = find(latGrid >= bboxLat(1) & latGrid <= bboxLat(2));
-    lonIdx = find(lonGrid >= bboxLon(1) & lonGrid <= bboxLon(2));
-    
-    if isempty(latIdx) || isempty(lonIdx)
-        continue;
-    end
-    
-    % OPTIMIZATION 4: Vectorize the inner loop
-    [I, J] = meshgrid(latIdx, lonIdx);
-    I = I(:);
-    J = J(:);
-    
-    gridLats = latGrid(I);
-    gridLons = lonGrid(J);
-    
-    % Convert grid points to ENU coordinates
-    north = (gridLats - lat0) * metersPerDegLat;
-    east = (gridLons - lon0) * metersPerDegLon;
-    
-    % Rotate points to ellipse-aligned coordinate system
-    cosTheta = cosd(theta_k);
-    sinTheta = sind(theta_k);
-    
-    x_rot = east * cosTheta + north * sinTheta;
-    y_rot = -east * sinTheta + north * cosTheta;
-    
-    % Check which points are inside ellipse
-    inside = (x_rot./a_k).^2 + (y_rot./b_k).^2 <= 1;
-    
-    % Update accumulation arrays for points inside ellipse
-    validIndices = find(inside);
-    for idx = 1:length(validIndices)
-        pos = validIndices(idx);
-        valueSum(I(pos), J(pos)) = valueSum(I(pos), J(pos)) + dataVal;
-        weightSum(I(pos), J(pos)) = weightSum(I(pos), J(pos)) + 1;
-    end
+    % Check in ENU coordinates which points are inside the (rotated) ellipse
+    inside = ((east.*cosd(theta) + north.*sind(theta))./a_v(id)).^2 + ...
+        ((east.*sind(theta) - north.*cosd(theta))./b_v(id)).^2 <= 1; % Equation of a rotated ellipse
+    inside_lat = searchgrid_lat_v(inside);
+    inside_lon = searchgrid_lon_v(inside);
+
+    % Find the indices of the points inside the ellipse in the accumulation arrays
+    lat_idx = 1+round((inside_lat-lat_min)./resolution_deg);
+    lon_idx = 1+round((inside_lon-lon_min)./resolution_deg);
+
+    % Update the accumulation array
+    idx = sub2ind(size(value_sum), lat_idx, lon_idx);
+    value_sum(idx) = value_sum(idx) + data_v(id);
+    weight_sum(idx) = weight_sum(idx) + 1;
 end
 
-fprintf('Done!\n');
-
 % Compute mean values where ellipses overlap
-heatmapData = valueSum ./ weightSum;
-heatmapData(weightSum == 0) = NaN;
+heatmap_data = value_sum./weight_sum;
+heatmap_data(weight_sum==0) = NaN; % Remove points without any ellipses
 
-% Create vectors for all valid grid points with their values
-[LON, LAT] = meshgrid(lonGrid, latGrid);
-validHeatmap = ~isnan(heatmapData);
+% Create vectors for all valid grid points with their values for output
+[lon, lat] = meshgrid(grid_lon, grid_lat);
+lat_grid = lat(~isnan(heatmap_data));
+lon_grid = lon(~isnan(heatmap_data));
+data_grid = heatmap_data(~isnan(heatmap_data));
+lat_lim = [lat_min lat_max];
+lon_lim = [lon_min lon_max];
 
-% Plot satellite imagery background
+% Plot heatmap on satellite imagery
 figure();
-geolimits([latMin latMax], [lonMin lonMax]);
+geolimits(lat_lim, lon_lim);
 geobasemap('satellite');
 hold on;
-
-% Use geoscatter for compatible geographic plotting
-latPoints = LAT(validHeatmap);
-lonPoints = LON(validHeatmap);
-dataPoints = heatmapData(validHeatmap);
-
 % Determine marker size based on grid resolution
-markerSize = max(1, 80 * resolutionDeg);
-
-h = geoscatter(latPoints, lonPoints, markerSize, dataPoints, 'filled');
-h.MarkerEdgeAlpha = 0.3;
-h.MarkerFaceAlpha = 0.7;
-
-% Add colorbar and styling
+marker_size = max(1, 100*resolution_deg);
+geoscatter(lat_grid, lon_grid, marker_size, data_grid, 'filled');
 colormap(turbo);
 colorbar;
-
 hold off;
 
 end

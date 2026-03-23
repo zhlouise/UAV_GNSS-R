@@ -106,7 +106,9 @@ title('Nadir-Received SV/Zenith-Received SV');
 %% CNR ratio
 
 CNR_ratio = CNR_nadir(:,id_nadir)./CNR_zenith(:,id_zenith);
-fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_ratio);
+CNR_ratio_clean = CNR_ratio;
+CNR_ratio_clean(altitude_ag<40,:) = NaN;
+fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_ratio_clean);
 
 %% Pseudorange error
 
@@ -131,43 +133,28 @@ pr_diff = pseudorange_nadir(:,id_nadir)-pseudorange_zenith(:,id_zenith);
 pr_diff_clean = pr_diff;
 pr_diff_clean(abs(pr_diff_clean)>300) = NaN;
 clock_and_delay_est = pr_diff_clean-reflection_delay_clean;
-figure();
-histogram(clock_and_delay_est);
-xlabel("Pseudorange Difference - Estimated Reflection Delay (m)");
-ylabel("Frequency");
-
-%% Estimated vegetation delay
 est_clock_delay = mean(clock_and_delay_est, 2, 'omitnan'); % Estimated receiver clock delay for each epoch
 veg_delay = clock_and_delay_est - est_clock_delay;
-fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), veg_delay);
 
-%% Estimated vegetation delay vs reflection delay
-figure();
-tiledlayout('flow', 'TileSpacing', 'compact', 'Padding', 'compact');
-prn_aligned = prn_nadir(id_nadir);
-aligned_nadir = pseudorange_nadir(:,id_nadir);
-aligned_zenith = pseudorange_zenith(:,id_zenith);
-for id = 1:length(prn_nadir(id_nadir))
-    nexttile;
-    % plot(reflection_delay_clean(:,id));
-    % plot(aligned_zenith(:,id));
-    hold on;
-    plot(veg_delay(:,id));
-    % plot(aligned_nadir(:,id));
-    title(['PRN: ', num2str(prn_aligned(id))]);
-    xlabel('Epochs');
-    ylabel('Delay (m)');
-    % ylabel('Pseudorange (m)');
-    xlim([0,height(aligned_nadir)]);
-    % center each subplot’s limits on its own mean with same span
-    % ycenter = mean([aligned_zenith(:,id); aligned_nadir(:,id)],'omitnan');
-    % ylim([ycenter - 0.02e7/2, ycenter + 0.02e7/2]);
-    % ylim([-200 200]);
-end
-% legend('Zenith Pseudorange', 'Nadir Pseudorange');
-%legend('Reflection Delay', 'Vegetation Delay');
+veg_delay_jumps = [nan(1, size(veg_delay, 2)); diff(veg_delay, 1, 1)];
+% veg_delay_jumps(abs(veg_delay_jumps)>30) = NaN;
 
-%% Temporal jumps in pseudorange difference
-zenith_jumps = diff(aligned_zenith, 1, 1);  % epochs-1 × satellites
-nadir_jumps  = diff(aligned_nadir, 1, 1);
-pr_diff_jumps = diff(pr_diff, 1, 1);
+% Estimated vegetation delay on FFZ
+veg_delay_clean = veg_delay;
+veg_delay_clean(altitude_ag<40,:) = NaN;
+fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), veg_delay_clean);
+
+% figure();
+% tiledlayout('flow', 'TileSpacing', 'compact', 'Padding', 'compact');
+% prn_aligned = prn_nadir(id_nadir);
+% aligned_nadir = pseudorange_nadir(:,id_nadir);
+% aligned_zenith = pseudorange_zenith(:,id_zenith);
+% for id = 1:length(prn_nadir(id_nadir))
+%     nexttile;
+%     hold on;
+%     plot(veg_delay(:,id));
+%     title(['PRN: ', num2str(prn_aligned(id))]);
+%     xlabel('Epochs');
+%     ylabel('Delay (m)');
+%     xlim([0,height(aligned_nadir)]);
+% end
