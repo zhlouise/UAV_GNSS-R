@@ -47,16 +47,15 @@ lon_max = max(centroid_lon_v) + max(a_v)/(111320*cosd(mean(centroid_lat_v)));
 
 % Grid resolution setting
 resolution = min(b_v)/2; % In meters
-resolution_deg = resolution/111320; % Approximated in degrees in degrees
+resolution_deg = resolution/111320; % Approximated in degrees
 fprintf('Grid resolution: %.6f degrees\n', resolution_deg);
 
 % Allocate grid
 grid_lat = lat_min:resolution_deg:lat_max;
 grid_lon = lon_min:resolution_deg:lon_max;
 
-% Initialize accumulation arrays
-value_sum = zeros(length(grid_lat), length(grid_lon)); % Sum of values for each grid point
-weight_sum = zeros(length(grid_lat), length(grid_lon)); % Number of data points that fall on each grid point
+% Initialize accumulation cell
+value_list = cell(length(grid_lat), length(grid_lon)); 
 
 % Loop for each FFZ to calculate data value at each grid point within the FFZ
 for id = 1:num_data
@@ -93,14 +92,18 @@ for id = 1:num_data
     lon_idx = 1+round((inside_lon-lon_min)./resolution_deg);
 
     % Update the accumulation array
-    idx = sub2ind(size(value_sum), lat_idx, lon_idx);
-    value_sum(idx) = value_sum(idx) + data_v(id);
-    weight_sum(idx) = weight_sum(idx) + 1;
+    idx = sub2ind(size(value_list), lat_idx, lon_idx);
+    for k = 1:numel(idx)
+        value_list{idx(k)}(end+1) = data_v(id); % Append in the grid data
+    end
 end
 
-% Compute mean values where ellipses overlap
-heatmap_data = value_sum./weight_sum;
-heatmap_data(weight_sum==0) = NaN; % Remove points without any ellipses
+% Calculate the mean for overlapping grid points
+heatmap_data = cellfun(@mean, value_list);
+
+% % Calculate the standard deviation for overlapping grid points
+% heatmap_data = cellfun(@std, value_list);
+% heatmap_data(heatmap_data==0) = NaN; % Remove grids with only 1 ellipse point
 
 % Create vectors for all valid grid points with their values for output
 [lon, lat] = meshgrid(grid_lon, grid_lat);

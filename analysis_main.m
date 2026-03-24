@@ -110,6 +110,13 @@ CNR_ratio_clean = CNR_ratio;
 CNR_ratio_clean(altitude_ag<40,:) = NaN;
 fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_ratio_clean);
 
+%% CNR difference
+
+CNR_diff = CNR_zenith(:,id_zenith) - CNR_nadir(:,id_nadir);
+CNR_diff_clean = CNR_diff;
+CNR_diff_clean(altitude_ag<40,:) = NaN;
+fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_diff_clean);
+
 %% Pseudorange error
 
 figure();
@@ -124,7 +131,7 @@ xlabel('Single Difference Pseudorange Error (m)');
 ylabel('Normalized Probability Distribution');
 legend('Zenith RHCP Antenna', 'Nadir LHCP Antenna');
 
-%% Reflection delay and vegetation delay
+%% Vegetation delay
 
 reflection_delay = estimate_delay(altitude_ag, ele_angle_nadir(:,id_nadir));
 reflection_delay_clean = reflection_delay;
@@ -136,25 +143,7 @@ clock_and_delay_est = pr_diff_clean-reflection_delay_clean;
 est_clock_delay = mean(clock_and_delay_est, 2, 'omitnan'); % Estimated receiver clock delay for each epoch
 veg_delay = clock_and_delay_est - est_clock_delay;
 
-veg_delay_jumps = [nan(1, size(veg_delay, 2)); diff(veg_delay, 1, 1)];
-% veg_delay_jumps(abs(veg_delay_jumps)>30) = NaN;
-
 % Estimated vegetation delay on FFZ
 veg_delay_clean = veg_delay;
-veg_delay_clean(altitude_ag<40,:) = NaN;
+veg_delay_clean(altitude_ag<17,:) = NaN;
 fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), veg_delay_clean);
-
-% figure();
-% tiledlayout('flow', 'TileSpacing', 'compact', 'Padding', 'compact');
-% prn_aligned = prn_nadir(id_nadir);
-% aligned_nadir = pseudorange_nadir(:,id_nadir);
-% aligned_zenith = pseudorange_zenith(:,id_zenith);
-% for id = 1:length(prn_nadir(id_nadir))
-%     nexttile;
-%     hold on;
-%     plot(veg_delay(:,id));
-%     title(['PRN: ', num2str(prn_aligned(id))]);
-%     xlabel('Epochs');
-%     ylabel('Delay (m)');
-%     xlim([0,height(aligned_nadir)]);
-% end
