@@ -125,4 +125,17 @@ colormap(turbo);
 colorbar;
 hold off;
 
+% Plot heatmap on the GeoTIFF of CIR imagery
+figure();
+[A, R] = readgeoraster("D:\Dropbox\FYP\Data\shingmun_20260308\CIR.tif");
+% Create map axes covering the area
+axesm('mercator', 'MapLatLimit', lat_lim, 'MapLonLimit', lon_lim);
+hold on;
+geoshow(A, R);
+marker_size = max(1, 100*resolution_deg);
+scatterm(lat_grid, lon_grid, marker_size, data_grid, 'filled');
+colormap(turbo);
+colorbar;
+hold off;
+
 end
