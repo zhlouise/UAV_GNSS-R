@@ -69,9 +69,11 @@ lon_lim = [lon_min lon_max];
 % Plot heatmap on satellite imagery
 figure();
 geolimits(lat_lim, lon_lim);
+% addCustomBasemap('GoogleSat', 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}')
 geobasemap('satellite');
+% geobasemap('GoogleSat');
 hold on;
-geoscatter(lat_grid, lon_grid, 50, data_grid,'square','filled','MarkerFaceAlpha', 0.5);
+geoscatter(lat_grid+resolution_lat_deg/2, lon_grid+resolution_lon_deg/2, 50, data_grid,'square','filled','MarkerFaceAlpha', 0.75);
 colormap(turbo);
 colorbar;
 hold off;

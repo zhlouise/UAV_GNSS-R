@@ -107,14 +107,14 @@ title('Nadir-Received SV/Zenith-Received SV');
 
 CNR_ratio = CNR_nadir(:,id_nadir)./CNR_zenith(:,id_zenith);
 CNR_ratio_clean = CNR_ratio;
-CNR_ratio_clean(altitude_ag<40,:) = NaN;
+CNR_ratio_clean(altitude_ag<35,:) = NaN;
 fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_ratio_clean);
 
 %% CNR difference
 
 CNR_diff = CNR_zenith(:,id_zenith) - CNR_nadir(:,id_nadir);
 CNR_diff_clean = CNR_diff;
-CNR_diff_clean(altitude_ag<40,:) = NaN;
+CNR_diff_clean(altitude_ag<35,:) = NaN;
 fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), CNR_diff_clean);
 
 %% Pseudorange error
@@ -145,5 +145,6 @@ veg_delay = clock_and_delay_est - est_clock_delay;
 
 % Estimated vegetation delay on FFZ
 veg_delay_clean = veg_delay;
-veg_delay_clean(altitude_ag<17,:) = NaN;
+veg_delay_clean(altitude_ag<13,:) = NaN;
 fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), veg_delay_clean);
+% gridded_heatmap(centroid_lat, centroid_lon, veg_delay_clean);
