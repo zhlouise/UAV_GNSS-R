@@ -145,6 +145,6 @@ veg_delay = clock_and_delay_est - est_clock_delay;
 
 % Estimated vegetation delay on FFZ
 veg_delay_clean = veg_delay;
-veg_delay_clean(altitude_ag<40,:) = NaN;
+veg_delay_clean(altitude_ag<13,:) = NaN;
 fresnel_zone_heatmap(centroid_lat,centroid_lon, a, b, azi_angle_zenith(:,id_zenith), veg_delay_clean);
 % gridded_heatmap(centroid_lat, centroid_lon, veg_delay_clean);

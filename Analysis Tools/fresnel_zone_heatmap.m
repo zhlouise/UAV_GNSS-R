@@ -46,7 +46,7 @@ lon_min = min(centroid_lon_v) - max(a_v)/(111320*cosd(mean(centroid_lat_v))); % 
 lon_max = max(centroid_lon_v) + max(a_v)/(111320*cosd(mean(centroid_lat_v)));
 
 % Grid resolution setting
-resolution = min(b_v)/2; % In meters
+resolution = min(b_v)/5; % In meters
 resolution_deg = resolution/111320; % Approximated in degrees
 fprintf('Grid resolution: %.6f degrees\n', resolution_deg);
 
@@ -110,8 +110,8 @@ heatmap_data = cellfun(@mean, value_list);
 lat_grid = lat(~isnan(heatmap_data));
 lon_grid = lon(~isnan(heatmap_data));
 data_grid = heatmap_data(~isnan(heatmap_data));
-lat_lim = [lat_min lat_max];
-lon_lim = [lon_min lon_max];
+lat_lim = [lat_min-20*resolution_deg lat_max+20*resolution_deg];
+lon_lim = [lon_min-20*resolution_deg lon_max+20*resolution_deg];
 
 % Plot heatmap on satellite imagery
 figure();
@@ -127,15 +127,18 @@ hold off;
 
 % Plot heatmap on the GeoTIFF of CIR imagery
 figure();
-[A, R] = readgeoraster("D:\Dropbox\FYP\Data\shingmun_20260308\CIR.tif");
+[A, R] = readgeoraster("D:\Dropbox\FYP\Data\mountdavis_20260331\CIR.tif");
 % Create map axes covering the area
 axesm('mercator', 'MapLatLimit', lat_lim, 'MapLonLimit', lon_lim);
 hold on;
-geoshow(A, R);
-marker_size = max(1, 100*resolution_deg);
-scatterm(lat_grid, lon_grid, marker_size, data_grid, 'filled');
+A_red_norm = mat2gray(A(:,:,1));
+geoshow(A_red_norm, R, 'DisplayType', 'texturemap');
+% geoshow(A, R);
+% marker_size = max(1, 100*resolution_deg);
+% scatterm(lat_grid, lon_grid, marker_size, data_grid, 'filled');
 colormap(turbo);
-colorbar;
+% clim([min(data_grid(:)) max(data_grid(:))]);
+% colorbar;
 hold off;
 
 end

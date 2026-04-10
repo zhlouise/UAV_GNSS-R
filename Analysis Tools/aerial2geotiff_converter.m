@@ -62,4 +62,4 @@ title('Warped and Georeferenced Image');
 
 % Save as a GeoTIFF
 [output_filename, output_pathname] = uiputfile('.tif', 'Save as GeoTIFF.');
-geotiffwrite([output_pathname, output_filename], img, R);
+geotiffwrite([output_pathname, output_filename], img_warped, R);
