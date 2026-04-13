@@ -1,9 +1,10 @@
-function [lat_grid, lon_grid, data_grid, lat_lim, lon_lim] = fresnel_zone_heatmap(centroid_lat, centroid_lon, a, b, azi_angle, data)
+function map_reconstruction(centroid_lat, centroid_lon, a, b, azi_angle, CNR_ratio, veg_delay)
 % -------------------------------------------------------------------------
-% Rasterizes First Fresnel Zone (FFZ) ellipses using precomputed geometry
-% to a georeferenced heatmap. Where ellipses overlap, each cell value is
-% the mean of the provided per-ellipse values. This function does so by
-% rasterizing the FFZ data onto a georeferenced grid. 
+% Reconstructs a local map of the UAV survey environment using the received
+% CNR ratio and estimated vegetation delay. The map is reconstructed
+% according to the observed trend that CNR ratio is inversely correlated
+% with red in CIR imagery and that the vegetation delay is positively
+% correlated with blue and gree in CIR imagery. 
 %
 % Inputs:
 %   centroid_lat: centroid latitude of the FFZ ellipse (n*m matrix) 
@@ -11,13 +12,8 @@ function [lat_grid, lon_grid, data_grid, lat_lim, lon_lim] = fresnel_zone_heatma
 %   a: semi-major axis of the FFZ in meters (ENU coordinate) (n*m matrix) 
 %   b: semi-minor axis of the FFZ in meters (ENU coordinate) (n*m matrix) 
 %   azi_angle: satellite azimuth angle (n*m matrix)
-%   data: measurement values to be visualized (n*m matrix)
-% Outputs:
-%   lat_grid: latitude of all grid cells to be plotted (vector)
-%   lon_grid: longitude of all grid cells to be plotted (vector)
-%   data_grid: data value of all grid cells to be plotted (vector)
-%   lat_lim: latitude limits of the grid [lat_min lat_max]
-%   lon_lim: longitude limits of the grid [lon_min lon_max]
+%   CNR_ratio: nadir CNR/zenith CNR (n*m matrix)
+%   veg_delay: estimated vegetation delay (n*m matrix)
 % -------------------------------------------------------------------------
 
 % Flatten inputs to vectors
@@ -26,16 +22,18 @@ centroid_lon_v = centroid_lon(:);
 a_v = a(:);
 b_v = b(:);
 az_v = azi_angle(:);
-data_v = data(:);
+CNR_v = CNR_ratio(:);
+delay_v = veg_delay(:);
 
 % Filter out invalid data
-valid_idx = ~isnan(centroid_lat_v) & ~isnan(centroid_lon_v) & ~isnan(a_v) & ~isnan(b_v) & ~isnan(az_v) & ~isnan(data_v) & (a_v>0) & (b_v>0);
+valid_idx = ~isnan(centroid_lat_v) & ~isnan(centroid_lon_v) & ~isnan(a_v) & ~isnan(b_v) & ~isnan(az_v) & ~isnan(CNR_v) & ~isnan(delay_v) & (a_v>0) & (b_v>0);
 centroid_lat_v = centroid_lat_v(valid_idx);
 centroid_lon_v = centroid_lon_v(valid_idx);
 a_v = a_v(valid_idx);
 b_v = b_v(valid_idx);
 az_v = az_v(valid_idx);
-data_v = data_v(valid_idx);
+CNR_v = CNR_v(valid_idx);
+delay_v = delay_v(valid_idx);
 num_data = numel(centroid_lat_v); % Number of data points
 
 % Determine grid bounds (with added padding based on maximum ellipse size,
@@ -54,8 +52,9 @@ fprintf('Grid resolution: %.6f degrees\n', resolution_deg);
 grid_lat = lat_min:resolution_deg:lat_max;
 grid_lon = lon_min:resolution_deg:lon_max;
 
-% Initialize accumulation cell
-value_list = cell(length(grid_lat), length(grid_lon)); 
+% Initialize accumulation cells
+CNR_list = cell(length(grid_lat), length(grid_lon)); 
+delay_list = cell(length(grid_lat), length(grid_lon));
 
 % Loop for each FFZ to calculate data value at each grid point within the FFZ
 for id = 1:num_data
@@ -92,24 +91,33 @@ for id = 1:num_data
     lon_idx = 1+round((inside_lon-lon_min)./resolution_deg);
 
     % Update the accumulation array
-    idx = sub2ind(size(value_list), lat_idx, lon_idx);
+    idx = sub2ind(size(CNR_list), lat_idx, lon_idx);
     for k = 1:numel(idx)
-        value_list{idx(k)}(end+1) = data_v(id); % Append in the grid data
+        % Append in the grid data
+        CNR_list{idx(k)}(end+1) = CNR_v(id); 
+        delay_list{idx(k)}(end+1) = delay_v(id);
     end
 end
 
 % Calculate the mean for overlapping grid points
-heatmap_data = cellfun(@mean, value_list);
+CNR_data = cellfun(@mean, CNR_list);
+delay_data = cellfun(@mean, delay_list);
+valid_grids = ~isnan(CNR_data) & ~isnan(delay_data); % Filter out NaN values
 
-% % Calculate the standard deviation for overlapping grid points
-% heatmap_data = cellfun(@std, value_list);
-% heatmap_data(heatmap_data==0) = NaN; % Remove grids with only 1 ellipse point
+% Normalized the datasets into a range between 0 and 1
+CNR_norm = mat2gray(CNR_data(valid_grids));
+delay_norm = mat2gray(delay_data(valid_grids));
+
+% Calculate the RGB color of the reconstructed map
+R = 1 - CNR_norm;
+G = delay_norm;
+B = delay_norm;
+RGB_colors = [R, 0.5.*G, 0.5.*B];
 
 % Create vectors for all valid grid points with their values for output
 [lon, lat] = meshgrid(grid_lon, grid_lat);
-lat_grid = lat(~isnan(heatmap_data));
-lon_grid = lon(~isnan(heatmap_data));
-data_grid = heatmap_data(~isnan(heatmap_data));
+lat_grid = lat(valid_grids);
+lon_grid = lon(valid_grids);
 lat_lim = [lat_min-20*resolution_deg lat_max+20*resolution_deg];
 lon_lim = [lon_min-20*resolution_deg lon_max+20*resolution_deg];
 
@@ -120,9 +128,8 @@ geobasemap('satellite');
 hold on;
 % Determine marker size based on grid resolution
 marker_size = max(1, 100*resolution_deg);
-geoscatter(lat_grid, lon_grid, marker_size, data_grid, 'filled');
-colormap(turbo);
-colorbar;
+geoscatter(lat_grid, lon_grid, marker_size, RGB_colors, 'filled');
 hold off;
 
 end
+
