@@ -1,19 +1,16 @@
 # UAV_GNSS-R
 
-Work-in-progress repository for processing and experimenting with GNSS‑R (Global Navigation Satellite System — Reflectometry) data collected from UAVs (Unmanned Aerial Vehicles / drones).
+[![Watch the Demo Video](<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/b53e6f52-9249-4158-8b9d-1b97cb0f6549" />)](https://youtu.be/ITI5U7S-F7k)
+
+Repository for processing and experimenting with GNSS‑R (Global Navigation Satellite System — Reflectometry) data collected from UAVs (Unmanned Aerial Vehicles / drones).
 
 This project contains tools and algorithms to process and analyze GNSS‑R observations from UAV platforms. The goal is to develop reproducible processing pipelines and exploration code for research and prototyping.
-
-**Status**
-- Work in progress — core functionality is under active development.
-- Some modules are prototypes and likely to change.
-- Issues, feature requests are welcome.
 
 
 **Project overview**
 - GNSS‑R leverages reflected signals from GNSS satellites to retrieve properties of the reflecting surface (e.g., sea state, soil moisture, surface roughness).
 - This repo focuses on adapting GNSS‑R processing for small UAV platforms with PX4 flight controllers, with the UAV prototype used for development as figure below:
-<img width="1334" height="842" alt="image" src="https://github.com/user-attachments/assets/36665a94-b12e-4799-939d-68487b54969c" />
+<img width="1725" height="849" alt="UAV_setup" src="https://github.com/user-attachments/assets/2454022f-6953-44f3-a0f6-1a583d9e3e6e" />
 
 
 **Contact**
