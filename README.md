@@ -1,4 +1,4 @@
-<h1 align="center">UAV_GNSS-R<h1>
+<h1 align="center">UAV_GNSS-R</h1>
 
 [![Watch the Demo Video](https://github.com/user-attachments/assets/38f046af-6b6c-4a90-9f65-55665c8f274d)](https://youtu.be/ITI5U7S-F7k)
 
