@@ -8,7 +8,7 @@ This project contains tools and algorithms to process and analyze GNSS‑R obser
 **Project overview**
 - GNSS‑R leverages reflected signals from GNSS satellites to retrieve properties of the reflecting surface (e.g., sea state, soil moisture, surface roughness).
 - This repo focuses on adapting GNSS‑R processing for small UAV platforms with PX4 flight controllers, with the UAV prototype used for development as figure below:
-<img width="1210" height="776" alt="image" src="https://github.com/user-attachments/assets/839b7fd4-08be-45d5-b62b-f85a3fa7baf3" />
+<img alt="image" src="https://github.com/user-attachments/assets/839b7fd4-08be-45d5-b62b-f85a3fa7baf3" />
 
 **Contact**
 - Maintainer: @zhlouise (GitHub)
