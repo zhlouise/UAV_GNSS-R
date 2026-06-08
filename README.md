@@ -1,6 +1,4 @@
-<h1 align="center">UAV_GNSS-R</h1>
-
-_Project Demonstration Video: https://youtu.be/ITI5U7S-F7k_
+<h2 align="center">Project Demonstration Video: https://youtu.be/ITI5U7S-F7k</h2>
 <img width="1210" height="776" alt="image" src="https://github.com/user-attachments/assets/38f046af-6b6c-4a90-9f65-55665c8f274d" />
 
 Repository for processing and experimenting with GNSS‑R (Global Navigation Satellite System - Reflectometry) data collected from UAVs (Unmanned Aerial Vehicles / drones).
